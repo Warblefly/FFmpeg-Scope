@@ -82,8 +82,8 @@ print ("FORMAT: ", FORMAT)
 LAVFI = ("movie='$MOVIE':streams=dv+da [video][audio]; " +
             "[video]scale=512:-1, split=3[video1][video2][video3];" +
             "[audio]asplit=[audio1][audio2]; " +
-            "[video1]histogram=mode=waveform:display_mode=overlay:" +
-            "waveform_mirror=1:waveform_mode=column, " +
+            "[video1]waveform=mode=column:display=overlay:" +
+            "mirror=1:components=7:envelope=instant:intensity=0.2, " +
             "drawgrid=x=-1:y=20:h=219:w=515:color=green,scale=w=512:h=512:flags=neighbor, " +
             "pad=w=812:h=812:color=gray [scopeout]; " +
             "[video2]scale=512:-1:flags=neighbor[monitorout]; " +
@@ -97,7 +97,7 @@ LAVFI = ("movie='$MOVIE':streams=dv+da [video][audio]; " +
             "setdar=1/1, setsar=1/1, " +
             "drawtext=fontfile='$FONT':timecode='$TIMECODE':" +
             "r=$FPS:x=726:y=0:fontcolor=white[comp]; " +
-            "[video3]histogram=mode=color2, " +
+            "[video3]vectorscope=mode=color3, " +
             "scale=212:212[vectorout]; "+
             "[comp][vectorout]overlay=x=512:y=600:eval=init[out0]")
             
