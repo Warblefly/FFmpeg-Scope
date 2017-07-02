@@ -82,9 +82,9 @@ print ("FORMAT: ", FORMAT)
 LAVFI = ("movie='$MOVIE':streams=dv+da [video][audio]; " +
             "[video]scale=512:-1, split=3[video1][video2][video3];" +
             "[audio]asplit=[audio1][audio2]; " +
-            "[video1]waveform=mode=column:display=overlay:" +
+            "[video1]format=nv12,waveform=graticule=green:mode=column:display=overlay:" +
             "mirror=1:components=7:envelope=instant:intensity=0.2, " +
-            "drawgrid=x=-1:y=20:h=219:w=515:color=green,scale=w=512:h=512:flags=neighbor, " +
+            "scale=w=512:h=512:flags=neighbor, " +
             "pad=w=812:h=812:color=gray [scopeout]; " +
             "[video2]scale=512:-1:flags=neighbor[monitorout]; " +
             "[audio1]ebur128=video=1:meter=18:framelog=verbose:peak=true[ebur128out][out1]; " +
@@ -97,7 +97,7 @@ LAVFI = ("movie='$MOVIE':streams=dv+da [video][audio]; " +
             "setdar=1/1, setsar=1/1, " +
             "drawtext=fontfile='$FONT':timecode='$TIMECODE':" +
             "r=$FPS:x=726:y=0:fontcolor=white[comp]; " +
-            "[video3]vectorscope=mode=color3, " +
+            "[video3]format=nv12,vectorscope=mode=color3, " +
             "scale=212:212[vectorout]; "+
             "[comp][vectorout]overlay=x=512:y=600:eval=init[out0]")
             
@@ -121,6 +121,7 @@ with tempfile.NamedTemporaryFile(delete=False) as lavfi_file:
 print('Filename of temporary file is: ',  lavfi_filename)
 dos_command = [FFMPEG+"ffplay.exe", "-threads", "auto", "-avioflags", "direct", "-seek2any", "1", "-err_detect", "aggressive", "-stats", "-fast", "-threads", "1", "-infbuf", "-f",  "lavfi", "-sws_flags", "neighbor", "-graph_file", lavfi_filename, "-i", ""]
 # dos_command = [FFMPEG+"ffmpeg.exe", "-hwaccel", "dxva2", "-re", "-flags2", "fast", "-f",  "lavfi", "-graph_file", lavfi_filename, "-i", "", "-flags2", "fast", "-f", "opengl", "OUTPUT"]
+print ('DOS command is: ', dos_command)
 subprocess.check_output(dos_command)
 
 
