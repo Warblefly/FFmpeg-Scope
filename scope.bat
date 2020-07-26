@@ -18,7 +18,6 @@ REM in the file you give it. It will fail if the file is missing one of these.
 REM
 REM This script is tested with stereo audio only.
 
-SET PYTHON_SCOPE_DIR="C:\Program Files\ffmpeg\bin"
+SET PYTHON_SCOPE_DIR="E:\Users\john\Documents"
 
 python %PYTHON_SCOPE_DIR%\scope.py %1
-
