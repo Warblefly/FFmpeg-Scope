@@ -18,7 +18,10 @@ from string import Template
 import argparse,  tempfile,  subprocess, json, pprint
 
 def ffmpegEscape(input):
-    return(input.replace("\\",  "\\\\").replace(":",  "\\:"))
+    return(input.replace("\\",  "\\\\")) 
+
+def lavfiEscape(input):
+    return(input.replace(":", "\:"))
 
 ## IMPORTANT -- CONFIGURATION ##
 ## PLEASE ENTER YOUR CONFIGURATION VALUES BELOW
@@ -30,11 +33,11 @@ FFMPEG = r"c:/Program Files/ffmpeg/bin/"
 
 ##   The FULL PATHNAME of your font for the timecode
 
-FONT = ffmpegEscape(r"c:/windows/fonts/arial.ttf")
+FONT = r"c:/windows/fonts/arial.ttf"
 
 ##   The STARTING VALUE for your timecode
 
-TIMECODE = ffmpegEscape("00:00:00:00")
+TIMECODE = "00\:00\:00\:00"
 
 
 ########################################
@@ -63,7 +66,12 @@ filename = ffmpegEscape(filename_raw)
 # FFprobe puts it in a JSON variable under 'stream', 'r_frame_rate'
 
 dos_command=[FFMPEG+"ffprobe.exe", "-v", "quiet", "-hide_banner", "-print_format", "json", "-show_streams", "-select_streams", "v:0", filename]
-ffprobeReturn = subprocess.check_output(dos_command, universal_newlines=True)
+try:
+	ffprobeReturn = subprocess.check_output(dos_command, stderr=subprocess.STDOUT, shell=True, universal_newlines=True)
+except subprocess.CalledProcessError as exc:
+	print(exc.output)
+	exit(0)
+
 jReturn = json.loads(ffprobeReturn)
 FPS= jReturn['streams'][0]['r_frame_rate']
 CODEC= jReturn['streams'][0]['codec_long_name']
@@ -79,59 +87,78 @@ print ("FORMAT: ", FORMAT)
 
 
 
-LAVFI = ("movie='$MOVIE':streams=dv+da [video][audio]; " +
-            "[video]scale=512:-1, split=3[video1][video2][video3];" +
-            "[audio]asplit=[audio1][audio2]; " +
-            "[video1]format=nv12,waveform=graticule=green:mode=column:display=overlay:" +
-            "mirror=1:components=7:envelope=instant:intensity=0.2, " +
-            "scale=w=512:h=512:flags=neighbor, " +
-            "pad=w=812:h=812:color=gray [scopeout]; " +
-            "[video2]scale=512:-1:flags=neighbor[monitorout]; " +
-            "[audio1]ebur128=video=1:meter=18:framelog=verbose:peak=true[ebur128out][out1]; " +
-            "[ebur128out]scale=300:300:flags=fast_bilinear[ebur128scaledout]; " +
-            "[scopeout][ebur128scaledout]overlay=x=512:eval=init[videoandebu]; " +
-            "[audio2]avectorscope=s=301x301:r=10:zoom=5, " +
-            "drawgrid=x=149:y=149:t=2:color=green [vector]; " +
-            "[videoandebu][monitorout]overlay=y=512:eval=init[comp3]; " +
-            "[comp3][vector]overlay=x=512:y=300:eval=init, " +
-            "setdar=1/1, setsar=1/1, " +
-            "drawtext=fontfile='$FONT':timecode='$TIMECODE':" +
-            "r=$FPS:x=726:y=0:fontcolor=white[comp]; " +
-            "[video3]format=nv12,vectorscope=mode=color3, " +
-            "scale=212:212[vectorout]; "+
-            "[comp][vectorout]overlay=x=512:y=600:eval=init[out0]")
+#LAVFI = ("movie='$MOVIE':streams=dv+da [video][audio]; " +
+#            "[video]scale=512:-1, split=3[video1][video2][video3];" +
+#            "[audio]asplit=[audio1][audio2]; " +
+#            "[video1]format=yuv420p10,waveform=graticule=green:mode=column:display=overlay:" +
+#            "mirror=1:components=7:envelope=instant:intensity=0.7, " +
+#            "scale=512:512:bicubic, " +
+#            "pad=w=812:h=812:color=black [scopeout]; " +
+#            "[video2]scale=512:-1:flags=bicubic[monitorout]; " +
+#            "[audio1]ebur128=video=1:meter=18:framelog=verbose:peak=true[ebur128out][out1]; " +
+#            "[ebur128out]scale=300:300:flags=fast_bilinear[ebur128scaledout]; " +
+#            "[scopeout][ebur128scaledout]overlay=x=512:eval=init[videoandebu]; " +
+#            "[audio2]avectorscope=s=301x301:r=10:zoom=5, " +
+#            "drawgrid=x=149:y=149:t=2:color=green [vector]; " +
+#            "[videoandebu][monitorout]overlay=y=512:eval=init[comp3]; " +
+#            "[comp3][vector]overlay=x=512:y=300:eval=init, " +
+#            "setdar=1/1, setsar=1/1, " +
+#            "drawtext=timecode='$TIMECODE':fontfile='$FONT':" +
+#            "r=$FPS:x=726:y=0:fontcolor=white[comp]; " +
+#            "[video3]format=nv12,vectorscope=mode=color3:i=1:e=instant:g=color:f=name, " +
+#            "scale=212:212[vectorout]; "+
+#            "[comp][vectorout]overlay=x=512:y=600:eval=init[out0]")
+
+LAVFI = (r"[vid1]scale=512:-1,split=3[video1][video2][video3];" +
+            "[aid1]asplit=[audio1][audio2];" +
+            "[video1]format=yuv420p10,waveform=graticule=green:mode=column:display=overlay:" +
+            "mirror=1:components=7:envelope=instant:intensity=0.7," +
+            "scale=512:512:bicubic," +
+            "pad=w=812:h=812:color=black [scopeout];" +
+            "[video2]scale=512:-1:flags=bicubic[monitorout];"  +
+            "[audio1]ebur128=video=1:meter=18:framelog=verbose:peak=true[ebur128out][ao];" +
+            "[ebur128out]scale=300:300:flags=fast_bilinear[ebur128scaledout];" +
+            "[scopeout][ebur128scaledout]overlay=x=512:eval=init[videoandebu];" +
+            "[audio2]avectorscope=s=301x301:r=10:zoom=5," +
+            "drawgrid=x=149:y=149:t=2:color=green [vector];" +
+            "[videoandebu][monitorout]overlay=y=512:eval=init[comp3];" +
+            "[comp3][vector]overlay=x=512:y=300:eval=init," +
+            "setdar=1/1, setsar=1/1," +
+            "drawtext=timecode='$TIMECODE':font=arial:" +
+            "r=$FPS:x=726:y=12:fontcolor=white[comp];" +
+            "[video3]format=nv12,vectorscope=mode=color3:i=1:e=instant:g=color:f=name," +
+            "scale=212:212[vectorout];"+
+            "[comp][vectorout]overlay=x=512:y=600:eval=init[vo]")
+
             
 
 
 # Make up the string that the LAVFI file will contain
 
 working = Template(LAVFI)
-lavfi_string = working.substitute(MOVIE = filename,  FONT=FONT,  TIMECODE=TIMECODE, FPS=FPS)
+#lavfi_string = working.substitute(MOVIE = lavfiEscape(filename),  FONT=lavfiEscape(FONT),  TIMECODE=TIMECODE, FPS=FPS)
+lavfi_string = working.substitute(TIMECODE=TIMECODE, FPS=FPS)
 # print ('LAVFI string is: ',  lavfi_string)
 
 
 # Now create a named temporary file and write the LAVFI string to it.
 # Prevent automatic deletion on closure
-with tempfile.NamedTemporaryFile(delete=False) as lavfi_file:
-    
-    lavfi_filename = lavfi_file.name
-    lavfi_file.write(lavfi_string.encode('utf-8'))
-    lavfi_file.close()
+#with tempfile.NamedTemporaryFile(delete=False) as lavfi_file:
+#    
+#    lavfi_filename = lavfi_file.name
+#    lavfi_file.write(lavfi_string.encode('utf-8'))
+#    lavfi_file.close()
 
-print('Filename of temporary file is: ',  lavfi_filename)
-dos_command = [FFMPEG+"ffplay.exe", "-threads", "auto", "-avioflags", "direct", "-seek2any", "1", "-err_detect", "aggressive", "-stats", "-fast", "-threads", "1", "-infbuf", "-f",  "lavfi", "-sws_flags", "neighbor", "-graph_file", lavfi_filename, "-i", ""]
-# dos_command = [FFMPEG+"ffmpeg.exe", "-hwaccel", "dxva2", "-re", "-flags2", "fast", "-f",  "lavfi", "-graph_file", lavfi_filename, "-i", "", "-flags2", "fast", "-f", "opengl", "OUTPUT"]
+#print('Filename of temporary file is: ',  lavfi_filename)
+print('LAVFI string is: %s' % lavfi_string)
+#dos_command = [FFMPEG+"ffplay.exe", "-v", "quiet", "-threads", "auto", "-stats", "-fast", "-f",  "lavfi", "-sws_flags", "neighbor", "-graph_file", lavfi_filename, "-i", ""]
+#dos_command = [FFMPEG+"ffmpeg.exe", "-hwaccel", "dxva2", "-re", "-flags2", "fast", "-f",  "lavfi", "-graph_file", lavfi_filename, "-i", "", "-flags2", "fast", "-f", "opengl", "OUTPUT"]
+dos_command = [FFMPEG+"mpv", r'--lavfi-complex='+lavfi_string, filename]
 print ('DOS command is: ', dos_command)
-subprocess.check_output(dos_command)
 
-
-
-
-
-
-
-
-
-
-
-
+try:
+	ffprobeReturn = subprocess.check_output(dos_command, stderr=subprocess.STDOUT, shell=False, universal_newlines=True)
+except subprocess.CalledProcessError as exc:
+	print(exc.output)
+	exit(0)
+   
