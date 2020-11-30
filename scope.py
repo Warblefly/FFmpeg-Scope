@@ -109,11 +109,11 @@ print ("FORMAT: ", FORMAT)
 #            "scale=212:212[vectorout]; "+
 #            "[comp][vectorout]overlay=x=512:y=600:eval=init[out0]")
 
-LAVFI = (r"[vid1]scale=512:-1,split=3[video1][video2][video3];" +
+LAVFI = (r"[vid1]split=3[video1][video2][video3];" +
             "[aid1]asplit=[audio1][audio2];" +
-            "[video1]format=yuv420p10,waveform=graticule=green:mode=column:display=overlay:" +
-            "mirror=1:components=7:envelope=instant:intensity=0.7," +
-            "scale=512:512:bicubic," +
+            "[video1]waveform=graticule=green:o=0.5:mode=column:display=overlay:" +
+            "mirror=1:components=7:envelope=instant:intensity=1," +
+            "scale=512:512," +
             "pad=w=812:h=812:color=black [scopeout];" +
             "[video2]scale=512:-1:flags=bicubic[monitorout];"  +
             "[audio1]ebur128=video=1:meter=18:framelog=verbose:peak=true[ebur128out][ao];" +
@@ -126,7 +126,7 @@ LAVFI = (r"[vid1]scale=512:-1,split=3[video1][video2][video3];" +
             "setdar=1/1, setsar=1/1," +
             "drawtext=timecode='$TIMECODE':font=arial:" +
             "r=$FPS:x=726:y=12:fontcolor=white[comp];" +
-            "[video3]format=nv12,vectorscope=mode=color3:i=1:e=instant:g=color:f=name," +
+            "[video3]vectorscope=mode=gray:i=1:e=peak+instant:g=green:o=1:f=name+white+black," +
             "scale=212:212[vectorout];"+
             "[comp][vectorout]overlay=x=512:y=600:eval=init[vo]")
 
@@ -161,4 +161,3 @@ try:
 except subprocess.CalledProcessError as exc:
 	print(exc.output)
 	exit(0)
-   
