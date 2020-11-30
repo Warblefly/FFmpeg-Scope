@@ -111,24 +111,19 @@ print ("FORMAT: ", FORMAT)
 
 LAVFI = (r"[vid1]split=3[video1][video2][video3];" +
             "[aid1]asplit=[audio1][audio2];" +
-            "[video1]waveform=graticule=green:o=0.5:mode=column:display=overlay:" +
-            "mirror=1:components=7:envelope=instant:intensity=1," +
-            "scale=512:512," +
-            "pad=w=812:h=812:color=black [scopeout];" +
-            "[video2]scale=512:-1:flags=bicubic[monitorout];"  +
-            "[audio1]ebur128=video=1:meter=18:framelog=verbose:peak=true[ebur128out][ao];" +
-            "[ebur128out]scale=300:300:flags=fast_bilinear[ebur128scaledout];" +
-            "[scopeout][ebur128scaledout]overlay=x=512:eval=init[videoandebu];" +
-            "[audio2]avectorscope=s=301x301:r=10:zoom=5," +
-            "drawgrid=x=149:y=149:t=2:color=green [vector];" +
-            "[videoandebu][monitorout]overlay=y=512:eval=init[comp3];" +
-            "[comp3][vector]overlay=x=512:y=300:eval=init," +
-            "setdar=1/1, setsar=1/1," +
-            "drawtext=timecode='$TIMECODE':font=arial:" +
-            "r=$FPS:x=726:y=12:fontcolor=white[comp];" +
-            "[video3]vectorscope=mode=gray:i=1:e=peak+instant:g=green:o=1:f=name+white+black," +
-            "scale=212:212[vectorout];"+
-            "[comp][vectorout]overlay=x=512:y=600:eval=init[vo]")
+            "[video1]waveform=graticule=green:o=0.5:mode=column:display=parade:" +
+            "mirror=1:components=7,scale=720:675[scopeout];" +
+            "[scopeout]drawtext=timecode='$TIMECODE':font=arial:r=$FPS:fontcolor=white[scopetc];" + 
+            "[video2]scale=720:405[monitorout];"  +
+            "[audio1]ebur128=video=1:meter=18:framelog=verbose:peak=true[ebur128unscaled][ao];" +
+            "[ebur128unscaled]fps=$FPS,scale=360:360[ebur128out];" +
+            "[audio2]avectorscope=s=360x360:r=$FPS:zoom=5," +
+            "drawgrid=x=179:y=179:t=2:color=green,fps=$FPS[avectorout];" +
+            "[video3]format=yuv444p,vectorscope=mode=color3:e=instant:g=green:o=1:f=name+white+black," +
+            "scale=360:360[vectorout];"+
+            "[scopetc][monitorout]vstack,setdar=1/1,setsar=1/1[col1];" +
+            "[ebur128out][avectorout][vectorout]vstack=inputs=3[col2];" +
+            "[col1][col2]hstack[vo]")
 
             
 
@@ -153,7 +148,7 @@ lavfi_string = working.substitute(TIMECODE=TIMECODE, FPS=FPS)
 print('LAVFI string is: %s' % lavfi_string)
 #dos_command = [FFMPEG+"ffplay.exe", "-v", "quiet", "-threads", "auto", "-stats", "-fast", "-f",  "lavfi", "-sws_flags", "neighbor", "-graph_file", lavfi_filename, "-i", ""]
 #dos_command = [FFMPEG+"ffmpeg.exe", "-hwaccel", "dxva2", "-re", "-flags2", "fast", "-f",  "lavfi", "-graph_file", lavfi_filename, "-i", "", "-flags2", "fast", "-f", "opengl", "OUTPUT"]
-dos_command = [FFMPEG+"mpv", r'--lavfi-complex='+lavfi_string, filename]
+dos_command = [FFMPEG+"mpv", '--hwdec=no', r'--lavfi-complex='+lavfi_string, filename]
 print ('DOS command is: ', dos_command)
 
 try:
@@ -161,3 +156,4 @@ try:
 except subprocess.CalledProcessError as exc:
 	print(exc.output)
 	exit(0)
+	
