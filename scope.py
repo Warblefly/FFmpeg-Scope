@@ -18,7 +18,7 @@ from string import Template
 import argparse,  tempfile,  subprocess, json, pprint
 
 def ffmpegEscape(input):
-    return(input.replace("\\",  "\\\\")) 
+    return(input.replace("\\",  "\\\\"))
 
 def lavfiEscape(input):
     return(input.replace(":", "\:"))
@@ -67,10 +67,10 @@ filename = ffmpegEscape(filename_raw)
 
 dos_command=[FFMPEG+"ffprobe.exe", "-v", "quiet", "-hide_banner", "-print_format", "json", "-show_streams", "-select_streams", "v:0", filename]
 try:
-	ffprobeReturn = subprocess.check_output(dos_command, stderr=subprocess.STDOUT, shell=True, universal_newlines=True)
+        ffprobeReturn = subprocess.check_output(dos_command, stderr=subprocess.STDOUT, shell=True, universal_newlines=True)
 except subprocess.CalledProcessError as exc:
-	print(exc.output)
-	exit(0)
+        print(exc.output)
+        exit(0)
 
 jReturn = json.loads(ffprobeReturn)
 FPS= jReturn['streams'][0]['r_frame_rate']
@@ -113,7 +113,7 @@ LAVFI = (r"[vid1]split=3[video1][video2][video3];" +
             "[aid1]asplit=[audio1][audio2];" +
             "[video1]waveform=graticule=green:o=0.5:mode=column:display=parade:" +
             "mirror=1:components=7,scale=720:675[scopeout];" +
-            "[scopeout]drawtext=timecode='$TIMECODE':font=arial:r=$FPS:fontcolor=white[scopetc];" + 
+            "[scopeout]drawtext=timecode='$TIMECODE':font=arial:r=$FPS:fontcolor=white[scopetc];" +
             "[video2]scale=720:405[monitorout];"  +
             "[audio1]ebur128=video=1:meter=18:framelog=verbose:peak=true[ebur128unscaled][ao];" +
             "[ebur128unscaled]fps=$FPS,scale=360:360[ebur128out];" +
@@ -125,7 +125,7 @@ LAVFI = (r"[vid1]split=3[video1][video2][video3];" +
             "[ebur128out][avectorout][vectorout]vstack=inputs=3[col2];" +
             "[col1][col2]hstack[vo]")
 
-            
+
 
 
 # Make up the string that the LAVFI file will contain
@@ -139,7 +139,7 @@ lavfi_string = working.substitute(TIMECODE=TIMECODE, FPS=FPS)
 # Now create a named temporary file and write the LAVFI string to it.
 # Prevent automatic deletion on closure
 #with tempfile.NamedTemporaryFile(delete=False) as lavfi_file:
-#    
+#
 #    lavfi_filename = lavfi_file.name
 #    lavfi_file.write(lavfi_string.encode('utf-8'))
 #    lavfi_file.close()
@@ -152,8 +152,7 @@ dos_command = [FFMPEG+"mpv", '--hwdec=no', r'--lavfi-complex='+lavfi_string, fil
 print ('DOS command is: ', dos_command)
 
 try:
-	ffprobeReturn = subprocess.check_output(dos_command, stderr=subprocess.STDOUT, shell=False, universal_newlines=True)
+        ffprobeReturn = subprocess.check_output(dos_command, stderr=subprocess.STDOUT, shell=True, universal_newlines=True, encoding='utf-8')
 except subprocess.CalledProcessError as exc:
-	print(exc.output)
-	exit(0)
-	
+        print(exc.output)
+        exit(0)
